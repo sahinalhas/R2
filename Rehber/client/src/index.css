@@ -1,0 +1,241 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  body {
+    @apply font-sans antialiased bg-gray-50 text-neutral-800 selection:bg-primary/20 selection:text-primary;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight font-semibold text-neutral-900;
+  }
+  
+  h1 {
+    @apply text-3xl lg:text-4xl;
+  }
+  
+  h2 {
+    @apply text-2xl lg:text-3xl;
+  }
+  
+  h3 {
+    @apply text-xl lg:text-2xl;
+  }
+  
+  h4 {
+    @apply text-lg lg:text-xl;
+  }
+  
+  p {
+    @apply leading-relaxed;
+  }
+  
+  /* Animasyonlar için temel ayarlar */
+  .animate-fade-in {
+    @apply animate-in fade-in duration-500;
+  }
+  
+  .animate-slide-in {
+    @apply animate-in slide-in-from-bottom-4 duration-500;
+  }
+  
+  .animate-scale-in {
+    @apply animate-in zoom-in-50 duration-500;
+  }
+
+  /* Blob animasyonları */
+  @keyframes blob {
+    0% {
+      transform: translate(0px, 0px) scale(1);
+    }
+    33% {
+      transform: translate(30px, -20px) scale(1.1);
+    }
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+    100% {
+      transform: translate(0px, 0px) scale(1);
+    }
+  }
+
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
+
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+
+  .animation-delay-3000 {
+    animation-delay: 3s;
+  }
+
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+}
+
+@layer components {
+  /* Sidebar styling */
+  .sidebar-icon {
+    @apply relative flex items-center justify-center h-10 w-10 my-2 mx-auto rounded
+    text-gray-700 hover:bg-primary hover:text-white transition-all duration-200 ease-out
+    cursor-pointer;
+  }
+
+  .sidebar-icon.active {
+    @apply bg-primary text-white;
+  }
+
+  .sidebar-tooltip {
+    @apply absolute w-auto px-2 py-1 m-2 min-w-max left-14 rounded 
+    text-white bg-neutral-800
+    text-xs font-medium transition-all duration-150 scale-0 origin-left;
+  }
+
+  .sidebar-icon:hover .sidebar-tooltip {
+    @apply scale-100;
+  }
+
+  /* Card components */
+  .card {
+    @apply bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 relative overflow-hidden;
+  }
+  
+  .card-hover {
+    @apply hover:border-primary/30 hover:-translate-y-0.5;
+  }
+
+  .card-glass {
+    @apply bg-white/90 backdrop-blur-sm border-white/10;
+  }
+
+  .stat-card {
+    @apply card p-5 overflow-hidden hover:after:opacity-100;
+  }
+
+  .stat-card::after {
+    @apply content-[''] absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent opacity-0 transition-opacity duration-300;
+  }
+
+  .stat-icon {
+    @apply p-3 rounded-xl border border-gray-100 shadow-sm bg-white;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    @apply bg-primary hover:bg-primary/90 text-white rounded-xl px-5 py-2.5
+    transition-all duration-300 font-medium text-sm shadow-sm hover:shadow-primary/30 hover:shadow-lg
+    hover:-translate-y-0.5 active:translate-y-0 focus:ring-2 focus:ring-primary/20 focus:outline-none;
+  }
+
+  .btn-secondary {
+    @apply bg-white hover:bg-gray-50 text-neutral-800 rounded-xl px-5 py-2.5
+    transition-all duration-300 font-medium text-sm shadow-sm hover:shadow-md
+    hover:-translate-y-0.5 active:translate-y-0 border border-gray-100 focus:ring-2 focus:ring-gray-200 focus:outline-none;
+  }
+
+  .btn-outline {
+    @apply border border-gray-200 hover:border-primary text-gray-700 hover:text-primary rounded-xl px-5 py-2.5
+    transition-all duration-300 font-medium text-sm bg-white shadow-sm hover:shadow-md
+    hover:-translate-y-0.5 active:translate-y-0 focus:ring-2 focus:ring-primary/20 focus:outline-none;
+  }
+  
+  .btn-icon {
+    @apply flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary
+    hover:bg-primary hover:text-white transition-all duration-300 focus:ring-2 focus:ring-primary/20;
+  }
+  
+  /* Form elements */
+  input, select, textarea {
+    @apply bg-white border-gray-200 rounded-lg text-sm shadow-sm focus:border-primary focus:ring-1 focus:ring-primary/20 focus:outline-none !important;
+  }
+  
+  input::placeholder, select::placeholder, textarea::placeholder {
+    @apply text-gray-400 !important;
+  }
+  
+  /* Navigation */
+  .nav-tab {
+    @apply px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-primary relative
+    transition-all duration-300 after:absolute after:bottom-0 after:left-0 after:right-0 
+    after:h-0.5 after:bg-primary after:scale-x-0 hover:after:scale-x-100 
+    after:transition-transform after:duration-300 after:origin-left;
+  }
+  
+  .nav-tab.active {
+    @apply text-primary after:scale-x-100 font-semibold;
+  }
+  
+  /* Badge styles */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset transition-all duration-300;
+  }
+  
+  .badge-primary {
+    @apply bg-primary/10 text-primary ring-primary/20;
+  }
+  
+  .badge-success {
+    @apply bg-emerald-50 text-emerald-700 ring-emerald-200/50;
+  }
+  
+  .badge-warning {
+    @apply bg-amber-50 text-amber-700 ring-amber-200/50;
+  }
+  
+  .badge-info {
+    @apply bg-blue-50 text-blue-700 ring-blue-200/50;
+  }
+  
+  .badge-secondary {
+    @apply bg-gray-100 text-gray-700 ring-gray-200/50;
+  }
+  
+  /* Table styles */
+  .table-container {
+    @apply border border-gray-100 rounded-xl shadow-sm overflow-hidden bg-white;
+  }
+  
+  .table-header {
+    @apply bg-gray-50/50 text-neutral-800 font-medium text-xs uppercase tracking-wider;
+  }
+  
+  .table-row {
+    @apply border-b border-gray-100 hover:bg-gray-50/50 transition-colors duration-150;
+  }
+  
+  .table-row:last-child {
+    @apply border-b-0;
+  }
+  
+  .table-cell {
+    @apply py-4 px-5 text-sm;
+  }
+  
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    @apply w-1.5 h-1.5;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-gray-100 rounded-full;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full hover:bg-gray-400 transition-colors;
+  }
+}
