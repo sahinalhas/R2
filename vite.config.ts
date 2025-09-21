@@ -23,6 +23,9 @@ export default defineConfig({
     port: 5000,
     hmr: {
       port: 5000,
+      clientPort: 443,
+      protocol: 'wss',
+      host: process.env.REPLIT_DOMAINS || 'localhost'
     },
   },
   resolve: {
