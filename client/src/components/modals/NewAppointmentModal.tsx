@@ -85,7 +85,7 @@ const NewAppointmentModal = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      studentId: "",
+      studentId: 0,
       appointmentType: "",
       date: today,
       time: "09:00",
@@ -112,11 +112,8 @@ const NewAppointmentModal = () => {
   // Randevu oluşturma
   const mutation = useMutation({
     mutationFn: async (data: any) => {
-      console.log("Randevu oluşturuluyor:", data);
-      return await apiRequest('/api/appointments', {
-        method: 'POST',
-        data
-      });
+      const res = await apiRequest('/api/appointments', 'POST', data);
+      return res.json();
     },
     onSuccess: (data: any) => {
       // Başarı bildirimi
@@ -209,7 +206,7 @@ const NewAppointmentModal = () => {
         render={({ field }) => (
           <FormItem>
             <FormLabel>Öğrenci</FormLabel>
-            <Select disabled={studentsLoading} onValueChange={field.onChange} value={field.value}>
+            <Select disabled={studentsLoading} onValueChange={(v) => field.onChange(Number(v))} value={String(field.value ?? 0)}>
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Öğrenci seçin" />

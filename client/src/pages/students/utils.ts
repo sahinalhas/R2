@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Student, Appointment, Session, Report } from "@shared/schema";
 
 // Öğrenci detaylarını getirme hook'u

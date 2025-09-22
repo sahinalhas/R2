@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { PlusCircle, ClipboardCheck, Filter, Search, UserRound, RefreshCw, BarChart3 } from "lucide-react";
+import { PlusCircle, ClipboardCheck, Filter, Search, UserRound, RefreshCw, BarChart3, Download } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,8 @@ const Surveys = () => {
   const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedAudience, setSelectedAudience] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
 
   const { data: surveys, isLoading, isError } = useQuery<Survey[]>({
     queryKey: ['/api/surveys'],
@@ -38,25 +40,32 @@ const Surveys = () => {
   });
 
   // Filtreleme fonksiyonu
-  const filteredSurveys = surveys?.filter(survey => {
-    // Arama sorgusu filtrelemesi
-    const matchesSearch = survey.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          (survey.description?.toLowerCase().includes(searchQuery.toLowerCase()) || false);
-    
-    // Tür filtrelemesi
-    const matchesType = selectedType === "all" || survey.type === selectedType;
-    
-    return matchesSearch && matchesType;
-  });
+  const filteredSurveys = useMemo(() => surveys?.filter(survey => {
+    const q = searchQuery.trim().toLowerCase();
+    const matchesSearch = q === "" || survey.title.toLowerCase().includes(q) || 
+      (survey.description?.toLowerCase().includes(q) || false) ||
+      survey.type.toLowerCase().includes(q) ||
+      survey.targetAudience.toLowerCase().includes(q);
 
-  // Anket türlerini al
+    const matchesType = selectedType === "all" || survey.type === selectedType;
+    const matchesAudience = selectedAudience === "all" || survey.targetAudience === selectedAudience;
+    const matchesStatus = selectedStatus === "all" || (selectedStatus === "active" ? survey.isActive : !survey.isActive);
+
+    return matchesSearch && matchesType && matchesAudience && matchesStatus;
+  }), [surveys, searchQuery, selectedType, selectedAudience, selectedStatus]);
+
+  // Anket türlerini ve hedef kitleleri al
   const surveyTypes: string[] = [];
+  const audiences: string[] = [];
   if (surveys) {
     const typeSet = new Set<string>();
+    const audSet = new Set<string>();
     surveys.forEach(survey => {
       if (survey.type) typeSet.add(survey.type);
+      if (survey.targetAudience) audSet.add(survey.targetAudience);
     });
     typeSet.forEach(type => surveyTypes.push(type));
+    audSet.forEach(a => audiences.push(a));
   }
 
   // Hedef kitle rengini belirle
@@ -67,6 +76,31 @@ const Surveys = () => {
       case "Öğretmen": return "bg-emerald-100 text-emerald-800";
       default: return "bg-gray-100 text-gray-800";
     }
+  };
+
+  // CSV dışa aktarma
+  const exportCSV = () => {
+    const rows = (filteredSurveys || []).map(s => ({
+      id: s.id,
+      baslik: s.title,
+      aciklama: s.description ?? "",
+      tur: s.type,
+      hedefKitle: s.targetAudience,
+      aktif: s.isActive ? "Evet" : "Hayır",
+      isimsiz: s.anonymous ? "Evet" : "Hayır",
+      baslangic: s.startDate ?? "",
+      bitis: s.endDate ?? "",
+      olusturulma: s.createdAt,
+    }));
+    const headers = Object.keys(rows[0] || { id: "", baslik: "", aciklama: "", tur: "", hedefKitle: "", aktif: "", isimsiz: "", baslangic: "", bitis: "", olusturulma: "" });
+    const csv = [headers.join(";"), ...rows.map(r => headers.map(h => String((r as any)[h]).replaceAll("\n"," ").replaceAll(";",",")).join(";"))].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `anketler-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -111,9 +145,34 @@ const Surveys = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1">
+          <Select value={selectedAudience} onValueChange={setSelectedAudience}>
+            <SelectTrigger className="w-36">
+              <SelectValue placeholder="Hedef Kitle" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tüm Kitleler</SelectItem>
+              {audiences.map(a => (
+                <SelectItem key={a} value={a}>{a}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+            <SelectTrigger className="w-36">
+              <SelectValue placeholder="Durum" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tümü</SelectItem>
+              <SelectItem value="active">Aktif</SelectItem>
+              <SelectItem value="passive">Pasif</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" className="gap-1" onClick={() => window.location.reload()}>
             <RefreshCw className="h-3.5 w-3.5" />
             Yenile
+          </Button>
+          <Button variant="secondary" size="sm" className="gap-1" onClick={exportCSV} disabled={!filteredSurveys?.length}>
+            <Download className="h-3.5 w-3.5" />
+            CSV
           </Button>
         </div>
       </div>
