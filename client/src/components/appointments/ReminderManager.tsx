@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -203,7 +202,7 @@ const ReminderManager = ({
       addNotification({
         type: "success",
         title: "Hatırlatıcı Eklendi",
-        message: "Yeni hatırlatıcı başarıyla kaydedildi."
+        message: "Yeni hat��rlatıcı başarıyla kaydedildi."
       });
       
       // Önerilen mesaj içeriğini yeniden ayarla
