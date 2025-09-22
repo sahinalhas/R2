@@ -573,6 +573,7 @@ const Header = () => {
           </DropdownMenu>
         </div>
       </div>
+      <CommandPalette />
     </header>
   );
 };
