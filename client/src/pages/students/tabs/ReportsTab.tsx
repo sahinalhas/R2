@@ -1,11 +1,9 @@
 import { BarChart4, FileText, Plus, Calendar } from "lucide-react";
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Report } from "@shared/schema";
 import { formatDate } from "../utils";
-import { Plus, FileText, Calendar } from "lucide-react";
 
 interface ReportsTabProps {
   reports: Report[];
