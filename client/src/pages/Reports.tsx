@@ -1,12 +1,11 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect, useMemo } from "react";
-import { format, subMonths, addDays } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { format, subMonths, addDays, parseISO } from "date-fns";
 import { tr } from "date-fns/locale";
 import {
   FileText, Search, Plus, Download, Printer,
   BarChart4, PieChart, LineChart,
-  Users, School, CalendarDays, GraduationCap
+  Users, School, CalendarDays, GraduationCap, ChevronRight, Trash2
 } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
@@ -28,6 +27,12 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
