@@ -353,6 +353,27 @@ const Header = () => {
           
           {/* Tema değiştirme bileşeni */}
           <ThemeSwitcher className="flex" />
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "rounded-xl px-2 py-1.5",
+                    theme.appearance === 'dark' ? "hover:bg-gray-800" : "hover:bg-gray-50"
+                  )}
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
+                  aria-label="Komut Paleti"
+                >
+                  <Search className="w-4 h-4" />
+                  <span className="ml-2 hidden md:inline text-xs text-muted-foreground">Ctrl + K</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">Komut Paleti (Ctrl + K)</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           
           {/* Bildirim Merkezi */}
           <NotificationCenter />
