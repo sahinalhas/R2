@@ -30,7 +30,7 @@ export default function CommandPalette() {
   const [query, setQuery] = useState("");
   const [_, navigate] = useLocation();
 
-  // Global kısayol: Ctrl/Cmd + K
+  // Global kısayol: Ctrl/Cmd + K ve özel event ile açma
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const isMac = navigator.platform.toLowerCase().includes("mac");
@@ -39,8 +39,18 @@ export default function CommandPalette() {
         setOpen((v) => !v);
       }
     };
+    const onOpenEvent = (e: Event) => {
+      // @ts-ignore - CustomEvent detail mevcut olabilir
+      const detail = (e as CustomEvent)?.detail;
+      if (detail === "toggle") setOpen((v) => !v);
+      else setOpen(true);
+    };
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("open-command-palette", onOpenEvent as EventListener);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("open-command-palette", onOpenEvent as EventListener);
+    };
   }, []);
 
   // Öğrenciler
