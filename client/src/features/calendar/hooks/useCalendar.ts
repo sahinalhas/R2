@@ -10,7 +10,6 @@ import {
   isSameMonth
 } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
-import { getQueryFn } from "@/lib/queryClient";
 
 // Tür tanımlamaları
 export interface TimeSlot {
@@ -36,7 +35,36 @@ export const useCalendar = () => {
     refetch: refetchSlots
   } = useQuery({
     queryKey: ['/api/available-slots', format(selectedDate, 'yyyy-MM-dd')],
-    queryFn: getQueryFn({ on401: 'returnNull' }),
+    queryFn: async ({ queryKey }) => {
+      const date = queryKey[1] as string;
+      const res = await fetch(`/api/available-slots?date=${encodeURIComponent(date)}`, { credentials: 'include' });
+      if (res.status === 401) {
+        return null as any;
+      }
+      if (!res.ok) {
+        try {
+          const errorJson = await res.json();
+          if (errorJson && errorJson.success === false && 'error' in errorJson) {
+            throw new Error(errorJson.error.message || `${res.status}: İşlem başarısız oldu`);
+          }
+          if (errorJson.message) {
+            throw new Error(errorJson.message);
+          } else if (errorJson.error) {
+            throw new Error(typeof errorJson.error === 'string' ? errorJson.error : JSON.stringify(errorJson.error));
+          }
+        } catch (e) {
+          if (e instanceof Error && e.message !== 'Unexpected end of JSON input') {
+            throw e;
+          }
+          throw new Error(`${res.status}: ${res.statusText || 'İşlem başarısız oldu'}`);
+        }
+      }
+      const json = await res.json();
+      if (json && typeof json === 'object' && 'data' in json && json.success === true) {
+        return json.data;
+      }
+      return json;
+    },
     enabled: !!selectedDate,
   });
   
