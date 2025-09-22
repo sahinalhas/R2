@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format, parseISO, subMonths, addDays } from "date-fns";
+import { useState, useEffect, useMemo } from "react";
+import { format, subMonths, addDays } from "date-fns";
 import { tr } from "date-fns/locale";
-import { 
-  FileText, Search, Plus, Download, Printer, Trash2, 
-  BarChart4, PieChart, LineChart, ChevronRight, 
-  Users, School, CalendarDays, GraduationCap, Filter
+import {
+  FileText, Search, Plus, Download, Printer,
+  BarChart4, PieChart, LineChart,
+  Users, School, CalendarDays, GraduationCap
 } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
@@ -17,24 +18,19 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select";
-import { 
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart as RechartsPieChart, Pie, Cell, LineChart as RechartsLineChart, Line
 } from 'recharts';
@@ -138,9 +134,19 @@ const Reports = () => {
   const { data: reports, isLoading: reportsLoading } = useReports();
   const [activeTab, setActiveTab] = useState("reports");
   const { data: dashboardData, isLoading: dashboardLoading } = useDashboardData();
-  
+  const { toast } = useToast();
+
+  // Modal state
+  const [openTemplateModal, setOpenTemplateModal] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
+  const [selectedStudent, setSelectedStudent] = useState<string>("");
+  const [customTitle, setCustomTitle] = useState<string>("");
+
+  const { data: activeTemplates } = useQuery({ queryKey: ['/api/report-templates/active'], staleTime: 60_000 });
+  const { data: students } = useQuery({ queryKey: ['/api/students'], staleTime: 60_000 });
+
   // Filtrelere göre raporları filtrele
-  const filteredReports = reports ? reports.filter((report: any) => {
+  const filteredReports = useMemo(() => (reports ? reports.filter((report: any) => {
     // Tür filtreleme
     if (filterType && filterType !== "all" && report.type !== filterType) {
       return false;
@@ -154,7 +160,52 @@ const Reports = () => {
       report.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       report.type?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }) : [];
+  }) : []), [reports, searchTerm, filterType]);
+
+  // CSV export
+  const exportCSV = () => {
+    const rows = (filteredReports || []).map((r: any) => ({
+      id: r.id,
+      baslik: r.title,
+      tur: r.type,
+      ogrenciId: r.studentId ?? "",
+      sinif: r.studentClass ?? "",
+      durum: r.status ?? "",
+      olusturulma: r.createdAt,
+    }));
+    const headers = Object.keys(rows[0] || { id: '', baslik: '', tur: '', ogrenciId: '', sinif: '', durum: '', olusturulma: '' });
+    const csv = [headers.join(';'), ...rows.map(r => headers.map(h => String((r as any)[h]).replaceAll("\n"," ").replaceAll(";",",")).join(';'))].join('\n');
+    const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `raporlar-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Create from template
+  const createFromTemplate = async () => {
+    try {
+      if (!selectedTemplate || !selectedStudent) {
+        toast({ title: 'Eksik bilgi', description: 'Şablon ve öğrenci seçiniz', variant: 'destructive' });
+        return;
+      }
+      const res = await fetch('/api/reports/from-template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateId: selectedTemplate, studentId: selectedStudent, title: customTitle || undefined }),
+      });
+      if (!res.ok) throw new Error('Rapor oluşturulamadı');
+      setOpenTemplateModal(false);
+      setSelectedTemplate("");
+      setSelectedStudent("");
+      setCustomTitle("");
+      toast({ title: 'Başarılı', description: 'Şablondan rapor oluşturuldu' });
+    } catch (e: any) {
+      toast({ title: 'Hata', description: e.message || 'İşlem başarısız', variant: 'destructive' });
+    }
+  };
 
   // Grafik renkleri
   const COLORS = ['#8b5cf6', '#6366f1', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981'];
@@ -176,12 +227,68 @@ const Reports = () => {
               Öğrenci ve sınıf performans istatistikleri, raporlar ve analizler
             </p>
           </div>
-          <Button className="bg-gradient-to-r from-primary to-primary/80 text-white rounded-xl px-5 py-6 font-medium shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-300">
-            <Plus className="w-5 h-5 mr-1.5" />
-            Yeni Rapor Oluştur
-          </Button>
+          <Dialog open={openTemplateModal} onOpenChange={setOpenTemplateModal}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-primary to-primary/80 text-white rounded-xl px-5 py-6 font-medium shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-300">
+                <Plus className="w-5 h-5 mr-1.5" />
+                Yeni Rapor Oluştur
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Şablondan Rapor Oluştur</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm text-gray-600">Şablon</label>
+                    <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Şablon seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(activeTemplates || []).map((t: any) => (
+                          <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-600">Öğrenci</label>
+                    <Select value={selectedStudent} onValueChange={setSelectedStudent}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Öğrenci seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(students || []).map((s: any) => (
+                          <SelectItem key={s.id} value={String(s.id)}>{s.firstName} {s.lastName}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm text-gray-600">Başlık (opsiyonel)</label>
+                  <Input value={customTitle} onChange={e => setCustomTitle(e.target.value)} placeholder="Rapor başlığı" />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpenTemplateModal(false)}>İptal</Button>
+                <Button onClick={createFromTemplate}>Oluştur</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
         
+        {/* Dışa Aktar */}
+        <div className="flex justify-end mb-4 gap-2">
+          <Button variant="outline" onClick={() => window.print()}>
+            <Printer className="w-4 h-4 mr-1" /> Yazdır/PDF
+          </Button>
+          <Button variant="secondary" onClick={exportCSV} disabled={!filteredReports?.length}>
+            <Download className="w-4 h-4 mr-1" /> CSV
+          </Button>
+        </div>
         {/* Tab Navigasyonu */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
           <TabsList className="bg-white/75 backdrop-blur-sm w-full justify-start p-1 rounded-xl shadow-sm border border-gray-100">
