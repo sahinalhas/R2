@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import NotificationCenter from "@/components/layout/NotificationCenter";
+import CommandPalette from "@/components/layout/CommandPalette";
 
 const Header = () => {
   const [location] = useLocation();
@@ -188,7 +189,7 @@ const Header = () => {
     { 
       id: 2, 
       title: "Öğrenci görüşmesi", 
-      description: "30 dakika içinde öğrenci görüşmesi başlayacak.",
+      description: "30 dakika içinde öğrenci g��rüşmesi başlayacak.",
       time: "30 dakika içinde", 
       type: "warning",
       icon: <BellRing className="w-5 h-5 text-amber-500" />
