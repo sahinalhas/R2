@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { services } from "../services";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { insertReminderSchema } from "@shared/schema";
 
 export function registerReminderRoutes(app: Express): void {
   // Tüm hatırlatıcıları getir
@@ -30,24 +31,11 @@ export function registerReminderRoutes(app: Express): void {
   // Yeni hatırlatıcı oluştur
   app.post("/api/reminders", async (req: Request, res: Response) => {
     try {
-      // Şema validasyonu için daha uygun bir yöntem eklenmeli
-      const reminderSchema = z.object({
-        appointmentId: z.number(),
-        reminderType: z.string(),
-        reminderTime: z.string(),
-        status: z.string().optional(),
-        message: z.string().optional()
-      });
-      
-      const result = reminderSchema.safeParse(req.body);
-      
+      const result = insertReminderSchema.safeParse(req.body);
       if (!result.success) {
         const errorMessage = fromZodError(result.error).message;
         return res.status(400).json({ message: errorMessage });
       }
-      
-      // Servis katmanı üzerinden hatırlatıcı oluştur
-      // Bu, aktivite kaydı ve bildirim gönderme işlemlerini de içerir
       const newReminder = await services.reminder.createReminder(result.data);
       res.status(201).json(newReminder);
     } catch (error) {

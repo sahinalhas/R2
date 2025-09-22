@@ -103,8 +103,8 @@ const ReminderManager = ({
   const { 
     data: reminders, 
     isLoading: loadingReminders 
-  } = useQuery({
-    queryKey: ['/api/reminders/appointment', appointmentId],
+  } = useQuery<Reminder[]>({
+    queryKey: [`/api/reminders/appointment/${appointmentId}`],
     queryFn: getQueryFn({ on401: 'returnNull' }),
     enabled: !!appointmentId
   });
@@ -113,8 +113,8 @@ const ReminderManager = ({
   const {
     data: student,
     isLoading: loadingStudent
-  } = useQuery({
-    queryKey: ['/api/students', studentId],
+  } = useQuery<Student>({
+    queryKey: [`/api/students/${studentId}`],
     queryFn: getQueryFn({ on401: 'returnNull' }),
     enabled: !!studentId
   });
@@ -184,15 +184,14 @@ const ReminderManager = ({
   
   // Yeni hatırlatıcı ekle
   const addReminderMutation = useMutation({
-    mutationFn: (data: Omit<Reminder, 'id' | 'status'>) => 
-      apiRequest('/api/reminders', {
-        method: 'POST',
-        data: {
-          ...data,
-          appointmentId,
-          status: 'Bekliyor'
-        },
-      }),
+    mutationFn: async (data: Omit<Reminder, 'id' | 'status' | 'createdAt'>) => {
+      const res = await apiRequest('/api/reminders', 'POST', {
+        ...data,
+        appointmentId,
+        status: 'Bekliyor'
+      });
+      return res.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/reminders/appointment', appointmentId] });
       form.reset({
@@ -224,10 +223,10 @@ const ReminderManager = ({
   
   // Hatırlatıcı sil
   const deleteReminderMutation = useMutation({
-    mutationFn: (id: number) => 
-      apiRequest(`/api/reminders/${id}`, {
-        method: 'DELETE',
-      }),
+    mutationFn: async (id: number) => {
+      await apiRequest(`/api/reminders/${id}`, 'DELETE');
+      return true;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/reminders/appointment', appointmentId] });
       addNotification({
@@ -247,7 +246,13 @@ const ReminderManager = ({
   
   // Form gönderme
   const onSubmit = (values: z.infer<typeof reminderSchema>) => {
-    addReminderMutation.mutate(values);
+    addReminderMutation.mutate({
+      type: values.type,
+      scheduledTime: values.scheduledTime,
+      recipientInfo: values.recipientInfo,
+      content: values.content,
+      appointmentId
+    } as any);
   };
   
   // Durum göstergesini render et
@@ -516,9 +521,9 @@ const ReminderManager = ({
           
           {loadingReminders ? (
             <div className="text-center py-4">Yükleniyor...</div>
-          ) : reminders && reminders.length > 0 ? (
+          ) : Array.isArray(reminders) && reminders.length > 0 ? (
             <div className="space-y-2">
-              {reminders.map((reminder: Reminder) => (
+              {(reminders as Reminder[]).map((reminder: Reminder) => (
                 <div 
                   key={reminder.id}
                   className="flex justify-between items-center p-3 bg-muted rounded-lg"
