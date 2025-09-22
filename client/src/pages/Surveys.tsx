@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { useState, useMemo } from "react";
 import { PlusCircle, ClipboardCheck, Filter, Search, UserRound, RefreshCw, BarChart3, Download } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,7 +42,7 @@ const Surveys = () => {
   // Filtreleme fonksiyonu
   const filteredSurveys = useMemo(() => surveys?.filter(survey => {
     const q = searchQuery.trim().toLowerCase();
-    const matchesSearch = q === "" || survey.title.toLowerCase().includes(q) ||
+    const matchesSearch = q === "" || survey.title.toLowerCase().includes(q) || 
       (survey.description?.toLowerCase().includes(q) || false) ||
       survey.type.toLowerCase().includes(q) ||
       survey.targetAudience.toLowerCase().includes(q);
