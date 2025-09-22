@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { format, isAfter } from "date-fns";
+import { format, isAfter, addDays } from "date-fns";
 import { tr } from "date-fns/locale";
 import { useNotifications } from "@/context/NotificationContext";
 import { CalendarIcon, Clock, CheckCircle2 } from "lucide-react";
@@ -87,36 +87,53 @@ const AvailabilityCalendar = ({
   return (
     <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4">
       {/* Takvim */}
-      <Card className="w-full md:w-1/2">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <CalendarIcon className="mr-2 h-5 w-5" />
-            Randevu Takvimi
-          </CardTitle>
-          <CardDescription>
+      <Card className="w-full md:w-1/2 border-0 shadow-md rounded-2xl ring-1 ring-black/5 dark:ring-white/10">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+              <CalendarIcon className="h-5 w-5" />
+              Randevu Takvimi
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setSelectedDate(new Date())}>Bugün</Button>
+              <div className="flex gap-1">
+                <Button variant="outline" size="icon" className="rounded-full" onClick={() => setSelectedDate(addDays(selectedDate, -1))} aria-label="Önceki gün">
+                  <span className="sr-only">Önceki</span>
+                  ‹
+                </Button>
+                <Button variant="outline" size="icon" className="rounded-full" onClick={() => setSelectedDate(addDays(selectedDate, 1))} aria-label="Sonraki gün">
+                  <span className="sr-only">Sonraki</span>
+                  ›
+                </Button>
+              </div>
+            </div>
+          </div>
+          <CardDescription className="text-xs md:text-sm">
             Uygun bir tarih seçin
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={(newDate) => newDate && setSelectedDate(newDate)}
-            locale={tr}
-            className="rounded-md border"
-            modifiers={{
-              available: (day) => isAvailableDay(day)
-            }}
-            modifiersClassNames={{
-              available: "bg-green-50 text-green-600 font-medium hover:bg-green-100"
-            }}
-            disabled={(date) => 
-              isAfter(new Date(), date) || 
-              isAfter(date, maxDate) ||
-              !hasWorkingHours(date)
-            }
-          />
-          <div className="flex mt-4 text-sm text-muted-foreground justify-between">
+        <CardContent className="pt-0">
+          <div className="rounded-xl border bg-card p-2">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(newDate) => newDate && setSelectedDate(newDate)}
+              locale={tr}
+              className="rounded-xl"
+              modifiers={{
+                available: (day) => isAvailableDay(day)
+              }}
+              modifiersClassNames={{
+                available: "bg-green-50 text-green-600 font-medium hover:bg-green-100"
+              }}
+              disabled={(date) =>
+                isAfter(new Date(), date) ||
+                isAfter(date, maxDate) ||
+                !hasWorkingHours(date)
+              }
+            />
+          </div>
+          <div className="flex mt-3 text-xs md:text-sm text-muted-foreground justify-between">
             <div className="flex items-center">
               <div className="w-3 h-3 rounded-full bg-green-600 mr-2"></div>
               <span>Uygun gün</span>
@@ -128,29 +145,33 @@ const AvailabilityCalendar = ({
           </div>
         </CardContent>
       </Card>
-      
+
       {/* Uygun zaman aralıkları */}
-      <Card className="w-full md:w-1/2">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Clock className="mr-2 h-5 w-5" />
+      <Card className="w-full md:w-1/2 border-0 shadow-md rounded-2xl ring-1 ring-black/5 dark:ring-white/10">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+            <Clock className="h-5 w-5" />
             Uygun Saatler
           </CardTitle>
-          <CardDescription>
-            {format(selectedDate, "d MMMM yyyy", { locale: tr })} tarihi için uygun saatleri görüntülüyorsunuz
+          <CardDescription className="text-xs md:text-sm">
+            {format(selectedDate, "d MMMM yyyy", { locale: tr })} için mevcut zaman aralıkları
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           {loadingSlots ? (
-            <div className="flex justify-center py-6">Yükleniyor...</div>
+            <div className="grid grid-cols-2 gap-2">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="h-10 rounded-full bg-muted animate-pulse" />
+              ))}
+            </div>
           ) : Array.isArray(availableSlots) && availableSlots.length > 0 ? (
             <ScrollArea className="h-72">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 pr-2">
                 {availableSlots.map((slot: TimeSlot, idx: number) => (
                   <Button
                     key={idx}
                     variant={selectedSlot && selectedSlot.startTime === slot.startTime ? "default" : "outline"}
-                    className="justify-start"
+                    className={"justify-center rounded-full h-10 transition-colors data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"}
                     onClick={() => handleSlotSelect(slot)}
                   >
                     <Clock className="mr-2 h-4 w-4" />
@@ -163,9 +184,9 @@ const AvailabilityCalendar = ({
               </div>
             </ScrollArea>
           ) : (
-            <div className="flex flex-col items-center justify-center py-6 text-center">
-              <Clock className="mb-2 h-10 w-10 text-muted-foreground" />
-              <h3 className="font-medium">İsterseniz randevu ekleyebilirsiniz</h3>
+            <div className="rounded-xl border p-4 text-center bg-muted/30">
+              <Clock className="mb-2 h-10 w-10 text-muted-foreground mx-auto" />
+              <h3 className="font-medium">Ön tanımlı aralıklardan seçim yapın</h3>
               <p className="text-sm text-muted-foreground mt-1">
                 Bu tarih için standart 30 dakikalık aralıklarla randevu oluşturabilirsiniz.
               </p>
@@ -189,7 +210,7 @@ const AvailabilityCalendar = ({
                   <Button
                     key={idx}
                     variant={selectedSlot && selectedSlot.startTime === slot.startTime ? "default" : "outline"}
-                    className="justify-start"
+                    className="justify-center rounded-full h-10"
                     onClick={() => handleSlotSelect(slot)}
                   >
                     <Clock className="mr-2 h-4 w-4" />
