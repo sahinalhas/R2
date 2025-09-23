@@ -18,6 +18,7 @@ import OverviewTab from "./tabs/OverviewTab";
 import AppointmentsTab from "./tabs/AppointmentsTab";
 import SessionsTab from "./tabs/SessionsTab";
 import ReportsTab from "./tabs/ReportsTab";
+import StudyProgramTab from "./tabs/StudyProgramTab";
 
 // Utility fonksiyonları ve hook'ları
 import { 
@@ -34,6 +35,7 @@ const TAB_CONFIG = [
   { value: "overview", label: "Genel Bakış", icon: BookOpen, color: "primary" },
   { value: "appointments", label: "Randevular", icon: Calendar, color: "blue-500" },
   { value: "sessions", label: "Görüşmeler", icon: MessageSquare, color: "purple-500" },
+  { value: "study", label: "Çalışma Programı", icon: BookOpen, color: "amber-500" },
   { value: "reports", label: "Raporlar", icon: BarChart4, color: "emerald-500" }
 ];
 
@@ -232,10 +234,14 @@ const StudentDetailLayout = ({ id, activeTab: initialTab = "overview" }: Student
             />
           </TabsContent>
           
+          <TabsContent value="study">
+            <StudyProgramTab studentId={id} />
+          </TabsContent>
+
           <TabsContent value="reports">
-            <ReportsTab 
-              reports={reports} 
-              studentId={id} 
+            <ReportsTab
+              reports={reports}
+              studentId={id}
             />
           </TabsContent>
         </Tabs>
