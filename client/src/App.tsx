@@ -110,7 +110,8 @@ function App() {
                 <Route path="/gorusmeler" component={Sessions} />
                 {/* Ders saatleri sayfası kaldırıldı */}
                 <Route path="/raporlar" component={Reports} />
-                
+                <Route path="/istatistikler" component={Statistics} />
+
                 {/* Anket Sayfaları */}
                 <Route path="/anketler" component={Surveys} />
                 <Route path="/anketler/olustur" component={SurveyCreate} />
