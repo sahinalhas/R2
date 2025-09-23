@@ -28,6 +28,7 @@ import StudentDetailLayout from "@/pages/students/StudentDetailLayout";
 import Appointments from "@/pages/Appointments";
 import Sessions from "@/pages/Sessions";
 import Reports from "@/pages/Reports";
+import Statistics from "@/pages/Statistics";
 import Settings from "@/pages/Settings";
 import NotificationTestPage from "@/pages/NotificationTestPage";
 import NotFound from "@/pages/not-found";
@@ -109,7 +110,8 @@ function App() {
                 <Route path="/gorusmeler" component={Sessions} />
                 {/* Ders saatleri sayfası kaldırıldı */}
                 <Route path="/raporlar" component={Reports} />
-                
+                <Route path="/istatistikler" component={Statistics} />
+
                 {/* Anket Sayfaları */}
                 <Route path="/anketler" component={Surveys} />
                 <Route path="/anketler/olustur" component={SurveyCreate} />

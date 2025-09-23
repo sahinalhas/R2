@@ -19,6 +19,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import {
   Select,
@@ -488,7 +489,7 @@ const Reports = () => {
                           <Users className="mr-2 h-5 w-5 text-purple-500" />
                           Cinsiyet Dağılımı
                         </CardTitle>
-                        <CardDescription>Cinsiyet bazında öğrenci dağılımı</CardDescription>
+                        <CardDescription>Cinsiyet bazında öğrenci dağılım��</CardDescription>
                       </CardHeader>
                       <CardContent className="pb-4 pt-0">
                         <div className="flex items-center mt-4">

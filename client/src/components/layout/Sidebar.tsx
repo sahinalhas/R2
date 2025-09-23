@@ -111,18 +111,11 @@ const Sidebar = () => {
           theme.appearance === 'dark' ? "bg-gray-800" : "bg-gray-100"
         )}></div>
         
-        <SidebarIcon 
-          icon={<BookOpenCheck className="w-5 h-5" />} 
-          tooltip="Kaynaklar" 
-          active={isActive("/kaynaklar")}
-          onClick={() => alert("Bu özellik yakında eklenecek")} 
-        />
-        
-        <SidebarIcon 
-          icon={<LineChart className="w-5 h-5" />} 
-          tooltip="İstatistikler" 
+        <SidebarIcon
+          icon={<LineChart className="w-5 h-5" />}
+          tooltip="İstatistikler"
           active={isActive("/istatistikler")}
-          onClick={() => alert("Bu özellik yakında eklenecek")} 
+          onClick={() => setLocation("/istatistikler")}
         />
       </div>
       
