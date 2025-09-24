@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -135,6 +135,123 @@ const StudyProgramTab = ({ studentId }: StudyProgramTabProps) => {
   const removeBlock = (id: string) => setBlocks(prev => prev.filter(b => b.id !== id));
   const updateBlock = (id: string, patch: Partial<ScheduleBlock>) => setBlocks(prev => prev.map(b => (b.id === id ? { ...b, ...patch } : b)));
 
+  // Haftalık takvim ızgarası konfigürasyonu
+  const startHour = 7;
+  const endHour = 24;
+  const step = 30; // dakika
+  const slotHeight = 24; // piksel / 30 dakika
+  const totalMinutes = (endHour - startHour) * 60;
+  const totalSlots = totalMinutes / step;
+  const hourLabels = useMemo(() => Array.from({ length: endHour - startHour + 1 }, (_, i) => `${String(startHour + i).padStart(2,'0')}:00`), []);
+
+  // Gün kolon referansları (drop ve sürükle sırasında konum hesaplamak için)
+  const dayRefsRef = useRef<(HTMLDivElement | null)[]>([]);
+
+  function snap(m: number) { return Math.round(m / step) * step; }
+  function clamp(m: number, min: number, max: number) { return Math.max(min, Math.min(max, m)); }
+
+  // Sürükleme/yeniden boyutlandırma durumu
+  const [dragState, setDragState] = useState<{
+    id: string;
+    type: 'move' | 'resize';
+    startY: number;
+    day: number;
+    startRel: number; // 07:00'dan itibaren dakika
+    endRel: number;
+  } | null>(null);
+
+  // Üstten ders etiketini takvime bırakma
+  function handleDrop(day: number, ev: any) {
+    ev.preventDefault();
+    const course = (ev.dataTransfer?.getData('text/plain') as string) || '';
+    const col = dayRefsRef.current?.[day];
+    if (!col) return;
+    const rect = col.getBoundingClientRect();
+    const y = ev.clientY - rect.top;
+    const relMin = clamp(snap(Math.floor(y / slotHeight) * step), 0, totalMinutes - step);
+    const startAbs = startHour * 60 + relMin;
+    const endAbs = clamp(startAbs + step, startHour * 60 + step, endHour * 60);
+    const id = crypto.randomUUID();
+    setBlocks(prev => [...prev, {
+      id,
+      dayOfWeek: day,
+      startTime: minutesToTime(startAbs),
+      endTime: minutesToTime(endAbs),
+      course: course || (Object.keys(topicsByCourse || {})[0] || 'Ders')
+    }]);
+  }
+
+  function startMove(e: any, id: string) {
+    e.preventDefault();
+    const blk = blocks.find(b => b.id === id);
+    if (!blk) return;
+    setDragState({
+      id,
+      type: 'move',
+      startY: e.clientY,
+      day: blk.dayOfWeek,
+      startRel: timeToMinutes(blk.startTime) - startHour * 60,
+      endRel: timeToMinutes(blk.endTime) - startHour * 60,
+    });
+  }
+
+  function startResize(e: any, id: string) {
+    e.preventDefault(); e.stopPropagation();
+    const blk = blocks.find(b => b.id === id);
+    if (!blk) return;
+    setDragState({
+      id,
+      type: 'resize',
+      startY: e.clientY,
+      day: blk.dayOfWeek,
+      startRel: timeToMinutes(blk.startTime) - startHour * 60,
+      endRel: timeToMinutes(blk.endTime) - startHour * 60,
+    });
+  }
+
+  // Global hareket/bitir dinleyicileri
+  useEffect(() => {
+    function onMove(ev: PointerEvent) {
+      if (!dragState) return;
+      const dy = ev.clientY - dragState.startY;
+      const deltaSlots = Math.round(dy / slotHeight);
+
+      if (dragState.type === 'move') {
+        // Hangi gün kolonunun üzerindeyiz?
+        let overDay = dragState.day;
+        for (let i = 0; i < 7; i++) {
+          const el = dayRefsRef.current[i];
+          if (!el) continue;
+          const r = el.getBoundingClientRect();
+          if (ev.clientX >= r.left && ev.clientX <= r.right) { overDay = i; break; }
+        }
+        const duration = dragState.endRel - dragState.startRel;
+        let newStart = clamp(snap(dragState.startRel + deltaSlots * step), 0, totalMinutes - duration);
+        let newEnd = newStart + duration;
+        setBlocks(prev => prev.map(b => b.id === dragState.id ? {
+          ...b,
+          dayOfWeek: overDay,
+          startTime: minutesToTime(startHour * 60 + newStart),
+          endTime: minutesToTime(startHour * 60 + newEnd)
+        } : b));
+      } else {
+        // resize
+        let newEndRel = clamp(snap(dragState.endRel + deltaSlots * step), dragState.startRel + step, totalMinutes);
+        setBlocks(prev => prev.map(b => b.id === dragState.id ? {
+          ...b,
+          endTime: minutesToTime(startHour * 60 + newEndRel)
+        } : b));
+      }
+    }
+    function onUp() { setDragState(null); }
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+  }, [dragState]);
+
   const saveAll = async () => {
     if (hasOverlap) {
       toast({ title: "Çakışma var", description: "Aynı günde saat çakışmaları var.", variant: "destructive" });
@@ -229,35 +346,76 @@ const StudyProgramTab = ({ studentId }: StudyProgramTabProps) => {
             {hasOverlap && (
               <div className="text-sm text-red-600">Aynı gün için saat çakışmaları var. Lütfen düzeltin.</div>
             )}
-            <div className="space-y-3">
-              {blocks.length === 0 && (
-                <div className="text-sm text-gray-500">Henüz blok yok. "Blok Ekle" ile başlayın.</div>
-              )}
-              {blocks.sort((a,b)=> a.dayOfWeek-b.dayOfWeek || timeToMinutes(a.startTime)-timeToMinutes(b.startTime)).map(b => (
-                <div key={b.id} className="grid grid-cols-12 gap-2 items-end">
-                  <div className="col-span-2">
-                    <Label>Gün</Label>
-                    <select value={b.dayOfWeek} onChange={e=>updateBlock(b.id,{dayOfWeek:Number(e.target.value)})} className="w-full h-9 rounded-md border px-2">
-                      {days.map((d,idx)=>(<option key={idx} value={idx}>{d}</option>))}
-                    </select>
-                  </div>
-                  <div className="col-span-2">
-                    <Label>Başlangıç</Label>
-                    <Input type="time" value={b.startTime} onChange={e=>updateBlock(b.id,{startTime:e.target.value})} />
-                  </div>
-                  <div className="col-span-2">
-                    <Label>Bitiş</Label>
-                    <Input type="time" value={b.endTime} onChange={e=>updateBlock(b.id,{endTime:e.target.value})} />
-                  </div>
-                  <div className="col-span-5">
-                    <Label>Ders</Label>
-                    <Input value={b.course} onChange={e=>updateBlock(b.id,{course:e.target.value})} placeholder="Örn: Matematik (TYT)" />
-                  </div>
-                  <div className="col-span-1 flex justify-end">
-                    <Button variant="ghost" size="icon" onClick={()=>removeBlock(b.id)} className="text-gray-500 hover:text-red-600"><Trash2 className="w-4 h-4"/></Button>
-                  </div>
-                </div>
+
+            {/* Dersler (üstte sürüklenebilir) */}
+            <div className="flex flex-wrap gap-2 items-center">
+              {Object.keys(topicsByCourse || {}).map((c)=> (
+                <Badge
+                  key={c}
+                  variant="secondary"
+                  draggable
+                  onDragStart={(e)=>{ e.dataTransfer.setData('text/plain', c); }}
+                  className="cursor-grab select-none"
+                >{c}</Badge>
               ))}
+              {Object.keys(topicsByCourse || {}).length === 0 && (
+                <div className="text-xs text-gray-500">Önce sağdaki Konu Yerleştirme Motoru bölümünde ders ekleyin.</div>
+              )}
+            </div>
+
+            {/* Haftalık 7x zaman ızgarası (07:00 - 24:00, 30 dk) */}
+            <div className="w-full overflow-x-auto">
+              <div className="min-w-[900px]">
+                <div className="grid grid-cols-8 gap-2">
+                  {/* Saat sütunu */}
+                  <div className="relative">
+                    <div style={{ height: totalSlots*slotHeight }} className="relative">
+                      {hourLabels.map((label, i)=> (
+                        <div key={i} className="absolute -translate-y-2 text-xs text-gray-500 select-none" style={{ top: i*2*slotHeight }}>
+                          {label}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Gün sütunları */}
+                  {days.map((d, dayIdx)=> (
+                    <div key={dayIdx} className="relative border rounded bg-white/50"
+                         ref={(el)=>{ dayRefsRef.current[dayIdx] = el }}
+                         onDragOver={(e)=>e.preventDefault()} onDrop={(e)=>handleDrop(dayIdx, e)}
+                         style={{ height: totalSlots*slotHeight }}>
+                      {/* 30dk çizgileri */}
+                      {Array.from({ length: totalSlots+1 }).map((_,i)=> (
+                        <div key={i} className={i%2===0?"absolute left-0 right-0 border-t border-gray-200":"absolute left-0 right-0 border-t border-gray-100"} style={{ top: i*slotHeight }} />
+                      ))}
+                      {/* Gün başlığı */}
+                      <div className="absolute -top-7 left-1/2 -translate-x-1/2 text-sm font-medium text-gray-700">{d}</div>
+
+                      {/* Bloklar */}
+                      {blocks.filter(b=> b.dayOfWeek===dayIdx).map(b=>{
+                        const startRel = timeToMinutes(b.startTime) - startHour*60;
+                        const endRel = timeToMinutes(b.endTime) - startHour*60;
+                        const top = (startRel/step)*slotHeight;
+                        const height = Math.max(slotHeight, ((endRel - startRel)/step)*slotHeight);
+                        return (
+                          <div key={b.id}
+                               className="absolute left-1 right-1 rounded bg-blue-600/80 text-white text-[11px] leading-tight shadow cursor-grab select-none"
+                               style={{ top, height }}
+                               onPointerDown={(e)=> startMove(e, b.id)}
+                          >
+                            <div className="px-2 py-1">
+                              <div className="font-medium truncate">{b.course}</div>
+                              <div className="opacity-90">{b.startTime} - {b.endTime}</div>
+                            </div>
+                            {/* Resize handle */}
+                            <div className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize" onPointerDown={(e)=> startResize(e, b.id)} />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
