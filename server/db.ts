@@ -2,9 +2,8 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import * as schema from '@shared/schema';
 import { ensureDataDir, DB_PATH } from './utils';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
 
-function ensureTableColumns(sqlite: Database) {
+function ensureTableColumns(sqlite: Database.Database) {
   const getColumns = (table: string): Set<string> => {
     const rows = sqlite.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
     return new Set(rows.map(r => r.name));
